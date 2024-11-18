@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "227546525180",
+    "project_id": "eventtase",
+    "storage_bucket": "eventtase.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:227546525180:android:ca85f843c81dc446da5679",
+        "android_client_info": {
+          "package_name": "com.eventtase.myapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUpxMEnE-C5fGMU_Z0iwSC9Wlwq6bhxsw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

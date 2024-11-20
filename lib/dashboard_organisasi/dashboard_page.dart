@@ -14,8 +14,8 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   final storage = const FlutterSecureStorage();
   String organizationName = '';
-  String? organizationId; // Tambahkan variabel untuk organizationId
-  List<Map<String, String>> events = []; // Daftar event yang akan ditampilkan
+  String? organizationId; 
+  List<Map<String, String>> events = [];
 
   @override
   void initState() {

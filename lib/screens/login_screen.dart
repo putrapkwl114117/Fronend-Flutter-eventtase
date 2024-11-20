@@ -46,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('https://3260-125-163-241-188.ngrok-free.app/api/login'),
+        Uri.parse('https://2e93-125-160-100-230.ngrok-free.app/api/login'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'email': _emailController.text,

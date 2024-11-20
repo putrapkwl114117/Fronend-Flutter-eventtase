@@ -46,8 +46,9 @@ class _CreateEventFormState extends State<CreateEventForm> {
   Future<void> _pickImage() async {
     // Request permission to access photos and storage
     PermissionStatus storagePermission = await Permission.storage.request();
+    PermissionStatus cameraPermission = await Permission.camera.request();
 
-    if (storagePermission.isGranted) {
+    if (storagePermission.isGranted && cameraPermission.isGranted) {
       try {
         final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
         if (pickedFile != null) {
@@ -59,7 +60,7 @@ class _CreateEventFormState extends State<CreateEventForm> {
         _showSnackBar("Failed to pick image: $error");
       }
     } else {
-      _showSnackBar("Permission to access storage is denied.");
+      _showSnackBar("Permission to access storage or camera is denied.");
     }
   }
 
@@ -85,7 +86,7 @@ class _CreateEventFormState extends State<CreateEventForm> {
     });
 
     try {
-      final uri = Uri.parse('https://3260-125-163-241-188.ngrok-free.app/api/events');
+      final uri = Uri.parse('https://2e93-125-160-100-230.ngrok-free.app/api/events');
       final request = http.MultipartRequest('POST', uri);
 
       request.fields['name'] = eventName;

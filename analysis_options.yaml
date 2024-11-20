@@ -13,6 +13,7 @@ analyzer:
     depend_on_referenced_packages: ignore
     deprecated_member_use: ignore
     library_private_types_in_public_api: ignore
+    dead_code_on_catch_subtype: ignore
 include: package:flutter_lints/flutter.yaml
 
 linter:

@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterScreen(),
         '/register-organization': (context) => const EventRegistrationForm(),
         '/forgot-password': (context) => const ForgotPasswordScreen(),
-        '/dashbord-organization': (context) => const DashboardPage(),
+        '/dashbord-organization': (context) => const DashboardPage(organizationId: '',),
       },
     );
   }

@@ -43,7 +43,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     final response = await http.post(
-      Uri.parse('https://2e93-125-160-100-230.ngrok-free.app/api/register'),
+      Uri.parse('http://10.0.2.2:8000/api/register'),
       body: {
         'name': _nameController.text,
         'email': _emailController.text,

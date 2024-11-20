@@ -9,7 +9,7 @@ import 'package:permission_handler/permission_handler.dart';
 class CreateEventForm extends StatefulWidget {
   const CreateEventForm({super.key, required this.onEventCreated});
 
-  final Function(dynamic newEvent) onEventCreated; // Callback to notify success
+  final Function(Map<String, String> newEvent) onEventCreated;
 
   @override
   _CreateEventFormState createState() => _CreateEventFormState();
@@ -28,12 +28,13 @@ class _CreateEventFormState extends State<CreateEventForm> {
   void initState() {
     super.initState();
     _loadOrganizationId();
+    _requestPermissions();
   }
 
   Future<void> _loadOrganizationId() async {
     final id = await storage.read(key: 'organizationId');
     if (id == null) {
-      _showSnackBar("Organization ID is missing. Please log in again.");
+      _showSnackBar("Organization ID is missing. Please log in again.", isError: true);
       Navigator.pushReplacementNamed(context, '/login');
     } else {
       setState(() {
@@ -42,25 +43,25 @@ class _CreateEventFormState extends State<CreateEventForm> {
     }
   }
 
-  // Pick an image from the gallery without blocking the UI
-  Future<void> _pickImage() async {
-    // Request permission to access photos and storage
+  Future<void> _requestPermissions() async {
     PermissionStatus storagePermission = await Permission.storage.request();
     PermissionStatus cameraPermission = await Permission.camera.request();
 
-    if (storagePermission.isGranted && cameraPermission.isGranted) {
-      try {
-        final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-        if (pickedFile != null) {
-          setState(() {
-            _imageFile = File(pickedFile.path);
-          });
-        }
-      } catch (error) {
-        _showSnackBar("Failed to pick image: $error");
+    if (!storagePermission.isGranted || !cameraPermission.isGranted) {
+      _showSnackBar("Please grant the necessary permissions for camera and storage.", isError: true);
+    }
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+      if (pickedFile != null) {
+        setState(() {
+          _imageFile = File(pickedFile.path);
+        });
       }
-    } else {
-      _showSnackBar("Permission to access storage or camera is denied.");
+    } catch (error) {
+      _showSnackBar("Failed to pick image: $error", isError: true);
     }
   }
 
@@ -69,15 +70,11 @@ class _CreateEventFormState extends State<CreateEventForm> {
     final String eventDescription = _descriptionController.text.trim();
 
     if (_organizationId == null) {
-      _showSnackBar("Organization ID is missing. Please log in again.");
+      _showSnackBar("Organization ID is missing. Please log in again.", isError: true);
       return;
     }
     if (eventName.isEmpty || eventDescription.isEmpty) {
-      _showSnackBar("Event name and description are required.");
-      return;
-    }
-    if (_imageFile == null) {
-      _showSnackBar("Please select an image.");
+      _showSnackBar("Event name and description are required.", isError: true);
       return;
     }
 
@@ -86,35 +83,39 @@ class _CreateEventFormState extends State<CreateEventForm> {
     });
 
     try {
-      final uri = Uri.parse('https://2e93-125-160-100-230.ngrok-free.app/api/events');
+      final uri = Uri.parse('http://10.0.2.2:8000/api/events');
       final request = http.MultipartRequest('POST', uri);
 
+      // Mengirimkan data ke API
+      request.fields['organization_id'] = _organizationId!;
       request.fields['name'] = eventName;
       request.fields['description'] = eventDescription;
-      request.fields['organization_id'] = _organizationId!;
 
-      // Log the file path to ensure it is valid
-      print("Uploading file: ${_imageFile!.path}");
-      request.files.add(await http.MultipartFile.fromPath('image', _imageFile!.path));
+      if (_imageFile != null) {
+        request.files.add(await http.MultipartFile.fromPath('image', _imageFile!.path));
+      }
 
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
       final decodedResponse = json.decode(responseBody);
 
-      if (response.statusCode == 200) {
-        // Notify success
-        widget.onEventCreated(decodedResponse); // Callback for successful creation
-        _showSnackBar("Event created successfully.");
+      if (response.statusCode == 200 && decodedResponse['event'] != null) {
+        // Mengonversi data API menjadi Map<String, String> untuk konsistensi
+        Map<String, String> newEvent = {
+          'name': decodedResponse['event']['name'],
+          'description': decodedResponse['event']['description'],
+          'imagePath': decodedResponse['event']['image_path'] ?? '',
+        };
 
-        // Navigate back to the dashboard after successful creation
+        widget.onEventCreated(newEvent); // Kirim event baru ke DashboardPage
+        _showSnackBar("Event created successfully.");
         Navigator.pushReplacementNamed(context, '/dashboard-organization');
       } else {
-        _showSnackBar("Failed to create event: ${decodedResponse['error'] ?? 'Unknown error'}");
+        final errorMessage = decodedResponse['error'] ?? 'Unknown error';
+        _showSnackBar("Failed to create event: $errorMessage", isError: true);
       }
-    } catch (error, stacktrace) {
-      print("Error occurred: $error");
-      print("Stack trace: $stacktrace");
-      _showSnackBar("Error occurred: $error");
+    } catch (error) {
+      _showSnackBar("Error occurred: $error", isError: true);
     } finally {
       setState(() {
         _isSubmitting = false;
@@ -122,8 +123,13 @@ class _CreateEventFormState extends State<CreateEventForm> {
     }
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+      ),
+    );
   }
 
   @override
@@ -136,32 +142,31 @@ class _CreateEventFormState extends State<CreateEventForm> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            TextFormField(
+            TextField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Event Name'),
             ),
-            const SizedBox(height: 10),
-            TextFormField(
+            TextField(
               controller: _descriptionController,
               decoration: const InputDecoration(labelText: 'Event Description'),
-              maxLines: 3,
             ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
+            ElevatedButton(
               onPressed: _pickImage,
-              icon: const Icon(Icons.image),
-              label: const Text("Choose Image"),
+              child: const Text("Pick Image"),
             ),
-            _imageFile != null
-                ? Image.file(_imageFile!, height: 100, width: 100)
-                : const SizedBox(),
+            if (_imageFile != null)
+              Image.file(
+                _imageFile!,
+                width: 100,
+                height: 100,
+              ),
             const SizedBox(height: 20),
             _isSubmitting
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
-                    onPressed: _submitForm,
-                    child: const Text('Create Event'),
-                  ),
+              onPressed: _submitForm,
+              child: const Text("Submit"),
+            ),
           ],
         ),
       ),

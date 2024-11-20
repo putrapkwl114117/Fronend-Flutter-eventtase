@@ -84,7 +84,7 @@ class _EventRegistrationFormState extends State<EventRegistrationForm> {
       }
 
       final response = await http.post(
-        Uri.parse('https://2e93-125-160-100-230.ngrok-free.app/api/register-organization'),
+        Uri.parse('http://10.0.2.2:8000/api/register-organization'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
           'Authorization': 'Bearer $token',

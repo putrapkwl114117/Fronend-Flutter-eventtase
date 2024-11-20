@@ -24,9 +24,10 @@ class _HomePageState extends State<HomePage> {
     _loadUserIdAndRegistrationStatus();
   }
 
-Future<void> _loadUserIdAndRegistrationStatus() async {
-    // Ambil userId dari storage
+  Future<void> _loadUserIdAndRegistrationStatus() async {
+    // Ambil userId dan organizationId dari storage
     userId = await storage.read(key: 'userId');
+    String? organizationId = await storage.read(key: 'organizationId');
 
     if (userId != null) {
       // Periksa status registrasi organisasi berdasarkan userId yang disimpan
@@ -36,13 +37,13 @@ Future<void> _loadUserIdAndRegistrationStatus() async {
         // Jika isRegistered == 'true', artinya organisasi sudah terdaftar
         isOrganizationRegistered = isRegistered == 'true';
         print("User ID: $userId"); // Debug log userId
+        print("Organization ID: $organizationId"); // Debug log organizationId
         print("Organization registered status for user $userId: $isOrganizationRegistered");
       });
     } else {
       print("User ID not found.");
     }
   }
-
 
   Future<void> _refreshPage() async {
     await _loadUserIdAndRegistrationStatus();
@@ -69,10 +70,10 @@ Future<void> _loadUserIdAndRegistrationStatus() async {
                 // Hapus token dan userId, tetapi simpan status registrasi organisasi
                 await storage.delete(key: 'authToken');
                 await storage.delete(key: 'userId');
-                await storage.delete(key: 'organizationId'); 
+                await storage.delete(key: 'organizationId');
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (context) => const WelcomeScreen()),
-                  (Route<dynamic> route) => false,
+                      (Route<dynamic> route) => false,
                 );
               },
             ),
@@ -102,26 +103,30 @@ Future<void> _loadUserIdAndRegistrationStatus() async {
                 ElevatedButton(
                   onPressed: () async {
                     if (isOrganizationRegistered) {
-                      // Arahkan ke Dashboard Admin tanpa organizationId
-                      print("Navigating to Dashboard..."); // Debug log
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DashboardPage(),
-                        ),
-                      );
+                      // Ambil organizationId dari storage sebelum navigasi
+                      String? organizationId = await storage.read(key: 'organizationId');
+                      if (organizationId != null) {
+                        // Lakukan navigasi ke Dashboard Admin dengan menggunakan organizationId
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DashboardPage(organizationId: organizationId),
+                          ),
+                        );
+                      } else {
+                        // Jika organizationId tidak ada, beri pesan atau navigasi ke halaman lain
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Organization ID not found!')),
+                        );
+                      }
                     } else {
                       // Arahkan ke pendaftaran organisasi
-                      print("Navigating to Event Registration Form..."); // Debug log
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const EventRegistrationForm(),
                         ),
-                      ).then((_) async {
-                        // Periksa status lagi setelah kembali dari pendaftaran
-                        await _loadUserIdAndRegistrationStatus();
-                      });
+                      );
                     }
                   },
                   child: Text(
